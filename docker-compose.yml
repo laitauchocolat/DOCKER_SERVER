@@ -1,0 +1,65 @@
+version: '3'
+services:
+    db:
+        image: mariadb
+        container_name: DB
+        command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+        restart: always
+        volumes:
+           - './db/data:/var/lib/mysql'
+        environment:
+           - MYSQL_ROOT_PASSWORD=XXXXXXXXXXXXXXXXXXXXX
+           - MYSQL_PASSWORD=XXXXXXXXXXXXXXXXXXXXX
+           - MYSQL_DATABASE=XXXXXXXXXXXXXXXXXXXXX
+           - MYSQL_USER=XXXXXXXXXXXXXXXXXXXXX
+    documentserver:
+        ports:
+            - '8082:443'
+        restart: always
+        container_name: ONLYOFFICE
+        volumes:
+            - './certificates/onlyoffice:/var/www/onlyoffice/Data'
+        image: 'onlyoffice/documentserver:latest'
+    nextcloud:
+        links:
+            - db
+        restart: always
+        ports:
+            - '8080:80'
+        restart: always
+        container_name: NEXTCLOUD
+        volumes:
+            - './nextcloud/data:/var/www/html'
+        build:
+            context: './nextcloud/'
+    portainer:
+        ports:
+            - '9000:9000'
+        restart: always
+        container_name: PORTAINER
+        volumes:
+            - './portainer/data:/data'
+            - './certificates/portainer:/certs'
+            - '/var/run/docker.sock:/var/run/docker.sock'
+        image: 'portainer/portainer:latest'
+        command:
+            --ssl
+            --sslcert /certs/cert.pem
+            --sslkey /certs/privkey.pem
+    openvpn:
+        restart: always
+        container_name: VPN
+        volumes:
+            - './vpn/data:/etc/openvpn'
+        ports:
+            - '1194:1194/udp'
+        image: 'kylemanna/openvpn'
+        privileged: true
+    syncthing:
+        image: 'syncthing/syncthing'
+        container_name: SYNCTHING
+        ports:
+            - '8384:8384'
+        volumes:
+            - '/media/julien-server/DATA/syncthing:/var/syncthing'
+        restart: always
